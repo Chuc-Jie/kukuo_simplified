@@ -503,7 +503,7 @@
         }
     }
 
-    // ---------- 已处理节点缓存（避免重复翻译）----------
+    // ---------- 已处理节点缓存（仅用于 Observer，避免重复翻译）----------
     const processedNodes = new WeakSet();
 
     // 翻译一个节点及其后代（使用 TreeWalker，C++ 层遍历）
@@ -517,7 +517,6 @@
         }
         if (root.nodeType !== 1) return;
         if (shouldIgnoreNode(root)) return;
-        if (processedNodes.has(root)) return; // 已处理过，跳过
 
         // 使用 TreeWalker 高效遍历文本节点（来自 github-chinese 的核心优化）
         const walker = document.createTreeWalker(
@@ -527,6 +526,8 @@
                 acceptNode: (node) => {
                     const parent = node.parentElement;
                     if (!parent) return NodeFilter.FILTER_REJECT;
+                    // 检查父节点是否在忽略区域中（修复：TreeWalker 不会自动检查 ancestor 忽略）
+                    if (shouldIgnoreNode(parent)) return NodeFilter.FILTER_REJECT;
                     const text = node.nodeValue;
                     if (!text || text.trim() === '' || /^\d+$/.test(text.trim())) return NodeFilter.FILTER_REJECT;
                     if (text.length > MAX_TEXT_LENGTH) return NodeFilter.FILTER_REJECT;
@@ -545,6 +546,7 @@
         const elWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
         let element;
         while (element = elWalker.nextNode()) {
+            if (shouldIgnoreNode(element)) continue;
             if (element.hasAttribute('title')) translateAttribute(element, 'title');
             if (element.hasAttribute('placeholder')) translateAttribute(element, 'placeholder');
             if (element.hasAttribute('aria-label')) translateAttribute(element, 'aria-label');
@@ -554,7 +556,18 @@
                 translateAttribute(element, 'value');
             }
         }
+    }
 
+    // Observer 专用：增量翻译并标记已处理
+    function translateNodeIncremental(root) {
+        if (!root) return;
+        if (root.nodeType === 3) {
+            translateTextNode(root);
+            return;
+        }
+        if (root.nodeType !== 1) return;
+        if (processedNodes.has(root)) return; // Observer 场景下跳过已处理的子树
+        translateNode(root);
         processedNodes.add(root);
     }
 
@@ -572,7 +585,7 @@
             for (const mutation of mutations) {
                 for (const node of mutation.addedNodes) {
                     if (node.nodeType === 1) {
-                        translateNode(node);
+                        translateNodeIncremental(node);
                     } else if (node.nodeType === 3 && node.nodeValue.trim()) {
                         translateTextNode(node);
                     }
