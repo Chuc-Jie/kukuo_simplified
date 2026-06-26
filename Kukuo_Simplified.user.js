@@ -448,6 +448,8 @@
         ['時間：', '时间：'],
         ['無視當前飢餓值', '无视当前饥饿值'],
         ['增加飽食度：', '增加饱食度：'],
+        ['食物屬性：', '食物属性：'],
+        ['增加飢餓值：', '增加饥饿值：'],
         ['在這裡輸入訊息', '在这里输入消息'],
         ['鏡頭距離', '镜头距离'],
         ['路徑點傳輸距離', '路径点传输距离'],
@@ -567,7 +569,7 @@
         const elWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
         let element;
         while (element = elWalker.nextNode()) {
-            if (shouldIgnoreNode(element)) continue;
+            // 属性翻译放在忽略检查之前——placeholder/aria-label 等安全属性可以翻译
             if (element.hasAttribute('title')) translateAttribute(element, 'title');
             if (element.hasAttribute('placeholder')) translateAttribute(element, 'placeholder');
             if (element.hasAttribute('aria-label')) translateAttribute(element, 'aria-label');
