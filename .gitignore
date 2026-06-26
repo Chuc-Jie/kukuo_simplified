@@ -1,0 +1,9 @@
+# Reasonix IDE config
+.reasonix/
+
+# Analysis documents (personal reference only)
+分析_github-chinese_仓库代码结构.md
+
+# OS files
+.DS_Store
+Thumbs.db
